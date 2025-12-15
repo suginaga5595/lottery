@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>応募者抽選システム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        h1 {
+            color: white;
+            font-size: 3rem;
+            margin-bottom: 30px;
+            text-shadow: 3px 3px 10px rgba(0,0,0,0.3);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .lottery-display {
+            background: white;
+            border-radius: 20px;
+            padding: 60px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .lottery-display::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,215,0,0.3), transparent);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #numberDisplay {
+            font-size: 6rem;
+            font-weight: bold;
+            color: #667eea;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.2);
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .number-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 50px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            min-width: 200px;
+        }
+
+        .number-label {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .winner-text {
+            font-size: 2rem;
+            color: #764ba2;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        button {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            padding: 20px 60px;
+            font-size: 1.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(245, 87, 108, 0.4);
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(245, 87, 108, 0.6);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: #f0f;
+            position: absolute;
+            animation: confetti-fall 3s linear;
+        }
+
+        @keyframes confetti-fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .particle {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); }
+            50% { transform: translateY(-20px) translateX(10px); }
+        }
+
+        .info {
+            color: white;
+            font-size: 1.2rem;
+            margin-top: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎊 応募者抽選 🎊</h1>
+        <div class="lottery-display">
+            <div id="numberDisplay">
+                <div class="number-box">
+                    <div class="number-label">当選者1</div>
+                    <div id="winner1">?</div>
+                </div>
+                <div class="number-box">
+                    <div class="number-label">当選者2</div>
+                    <div id="winner2">?</div>
+                </div>
+            </div>
+            <div id="winnerText" class="winner-text" style="display: none;">🎉 当選者決定! 🎉</div>
+        </div>
+        <button id="startBtn" onclick="startLottery()">抽選スタート</button>
+        <div class="info">総応募者数: 117名 | 当選者数: 2名</div>
+    </div>
+
+    <script>
+        let isRunning = false;
+        let intervalId1, intervalId2;
+        let currentNumber1 = 1;
+        let currentNumber2 = 2;
+        let speed = 50;
+        const maxSpeed = 10;
+        const minSpeed = 200;
+
+        function createParticles() {
+            const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7', '#fd79a8'];
+            for (let i = 0; i < 30; i++) {
+                setTimeout(() => {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.width = Math.random() * 20 + 10 + 'px';
+                    particle.style.height = particle.style.width;
+                    particle.style.left = Math.random() * window.innerWidth + 'px';
+                    particle.style.top = Math.random() * window.innerHeight + 'px';
+                    particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    particle.style.animationDelay = Math.random() * 2 + 's';
+                    document.body.appendChild(particle);
+                    
+                    setTimeout(() => particle.remove(), 4000);
+                }, i * 100);
+            }
+        }
+
+        function createConfetti() {
+            const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7', '#fd79a8', '#00d2d3'];
+            for (let i = 0; i < 100; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * window.innerWidth + 'px';
+                    confetti.style.top = '-10px';
+                    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                    confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                    document.body.appendChild(confetti);
+                    
+                    setTimeout(() => confetti.remove(), 3000);
+                }, i * 30);
+            }
+        }
+
+        function getUniqueRandomNumbers() {
+            const numbers = [];
+            while (numbers.length < 2) {
+                const num = Math.floor(Math.random() * 117) + 1;
+                if (!numbers.includes(num)) {
+                    numbers.push(num);
+                }
+            }
+            return numbers;
+        }
+
+        function startLottery() {
+            if (isRunning) return;
+            
+            isRunning = true;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('winnerText').style.display = 'none';
+            speed = maxSpeed;
+            
+            createParticles();
+            
+            const [finalNumber1, finalNumber2] = getUniqueRandomNumbers();
+            const duration = 5000;
+            const startTime = Date.now();
+            
+            function updateNumbers() {
+                currentNumber1 = Math.floor(Math.random() * 117) + 1;
+                currentNumber2 = Math.floor(Math.random() * 117) + 1;
+                document.getElementById('winner1').textContent = currentNumber1;
+                document.getElementById('winner2').textContent = currentNumber2;
+                
+                const elapsed = Date.now() - startTime;
+                const progress = elapsed / duration;
+                
+                if (progress >= 1) {
+                    clearInterval(intervalId1);
+                    document.getElementById('winner1').textContent = finalNumber1;
+                    document.getElementById('winner2').textContent = finalNumber2;
+                    document.getElementById('winnerText').style.display = 'block';
+                    isRunning = false;
+                    document.getElementById('startBtn').disabled = false;
+                    createConfetti();
+                } else {
+                    speed = maxSpeed + (minSpeed - maxSpeed) * Math.pow(progress, 2);
+                    clearInterval(intervalId1);
+                    intervalId1 = setInterval(updateNumbers, speed);
+                }
+            }
+            
+            intervalId1 = setInterval(updateNumbers, speed);
+        }
+
+        window.onload = function() {
+            createParticles();
+        };
+    </script>
+</body>
+</html>
