@@ -235,7 +235,7 @@
         function getUniqueRandomNumbers() {
             const numbers = [];
             while (numbers.length < 2) {
-                const num = Math.floor(Math.random() * 117) + 1;
+                const num = Math.floor(Math.random() * 98) + 1;
                 if (!numbers.includes(num)) {
                     numbers.push(num);
                 }
@@ -258,8 +258,8 @@
             const startTime = Date.now();
             
             function updateNumbers() {
-                currentNumber1 = Math.floor(Math.random() * 117) + 1;
-                currentNumber2 = Math.floor(Math.random() * 117) + 1;
+                currentNumber1 = Math.floor(Math.random() * 98) + 1;
+                currentNumber2 = Math.floor(Math.random() * 98) + 1;
                 document.getElementById('winner1').textContent = currentNumber1;
                 document.getElementById('winner2').textContent = currentNumber2;
                 
